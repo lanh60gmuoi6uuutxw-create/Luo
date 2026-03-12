@@ -11,14 +11,14 @@
             padding: 0;
             width: 100%;
             height: 100%;
-            background-color: #12100e; /* 深邃暗色背景 */
-            color: #d8cba9; /* 泛黄纸张文字色 */
+            background-color: #12100e; 
+            color: #d8cba9; 
             font-family: '楷体', 'KaiTi', serif;
             overflow: hidden;
             user-select: none;
         }
 
-        /* --- 新增：开始界面样式 --- */
+        /* --- 开始界面样式 --- */
         #start-screen {
             position: absolute;
             top: 0;
@@ -31,7 +31,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            transition: opacity 1.5s ease; /* 淡出动画 */
+            transition: opacity 1.5s ease; 
         }
 
         #start-screen h1 {
@@ -66,8 +66,8 @@
             box-shadow: 0 0 20px rgba(207, 168, 110, 0.5);
             transform: scale(1.05);
         }
-        /* ----------------------- */
 
+        /* 游戏主容器 */
         #game-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -120,6 +120,16 @@
             flex-grow: 1;
             text-align: justify;
             text-shadow: 1px 1px 2px #000;
+            overflow-y: auto;
+            padding-right: 15px;
+        }
+
+        #event-text::-webkit-scrollbar {
+            width: 6px;
+        }
+        #event-text::-webkit-scrollbar-thumb {
+            background-color: #4a3b2c;
+            border-radius: 3px;
         }
 
         #options-area {
@@ -160,7 +170,6 @@
             padding: 0 20px;
         }
 
-        /* 数值律动与进度条样式 */
         .stat-container {
             width: 20%;
             display: flex;
@@ -191,7 +200,7 @@
             transition: width 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), background-color 0.8s;
         }
 
-        /* 数值跌破 30 的红光警告与心跳律动动画 */
+        /* 警告动画 */
         @keyframes pulseAlert {
             0% { box-shadow: 0 0 5px #8a2020; transform: scale(1); }
             50% { box-shadow: 0 0 15px #d83030; transform: scale(1.02); }
@@ -250,7 +259,6 @@
             color: #fff;
         }
 
-        /* 开发调试用按钮 */
         .debug-btn {
             position: absolute;
             top: 10px;
@@ -267,27 +275,22 @@
 </head>
 <body>
 
-    <!-- 新增：开始游戏标题界面 -->
     <div id="start-screen">
         <h1>大清掌舵人 1861</h1>
         <p>挽狂澜于既倒，扶大厦之将倾</p>
         <button class="start-btn" onclick="enterGame()">开始游戏</button>
     </div>
 
-    <!-- 游戏主容器 -->
     <div id="game-container">
-        
-        <!-- 左侧视觉反馈区 -->
         <div id="left-panel">
-            <!-- 底层环境与人物剪影 -->
             <canvas id="bg-canvas"></canvas>
-            <!-- 顶层特效 (水墨、飞溅、震动) -->
             <canvas id="fx-canvas"></canvas>
+            <button class="debug-btn" onclick="testDanger()">[测试] 强降数值触发律动</button>
             
-            <button class="debug-btn" onclick="testDanger()">[测试] 扣除数值触发危险律动</button>
+            <!-- 新增：音乐控制按钮 -->
+            <button id="audio-toggle" onclick="toggleAudio()" style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.5); color: #8a735c; border: 1px solid #5a4b3c; padding: 5px 10px; cursor: pointer; z-index: 100; font-family: '楷体', 'KaiTi', serif;">🔊 音乐开</button>
         </div>
 
-        <!-- 右侧事件文本与选项交互区 -->
         <div id="right-panel">
             <div id="game-header">
                 <span id="ui-year">咸丰十一年 (1861年)</span>
@@ -303,24 +306,19 @@
             </div>
         </div>
 
-        <!-- 底部四大数值进度条区 -->
         <div id="bottom-panel">
-            <!-- 财 -->
             <div class="stat-container" id="container-wealth">
                 <div class="stat-header"><span>财 (国库)</span> <span id="val-wealth">65</span></div>
                 <div class="progress-bg"><div class="progress-fill" id="bar-wealth"></div></div>
             </div>
-            <!-- 武 -->
             <div class="stat-container" id="container-military">
                 <div class="stat-header"><span>武 (军力)</span> <span id="val-military">50</span></div>
                 <div class="progress-bg"><div class="progress-fill" id="bar-military"></div></div>
             </div>
-            <!-- 民 -->
             <div class="stat-container" id="container-people">
                 <div class="stat-header"><span>民 (民心)</span> <span id="val-people">60</span></div>
                 <div class="progress-bg"><div class="progress-fill" id="bar-people"></div></div>
             </div>
-            <!-- 权 -->
             <div class="stat-container" id="container-power">
                 <div class="stat-header"><span>权 (皇权)</span> <span id="val-power">75</span></div>
                 <div class="progress-bg"><div class="progress-fill" id="bar-power"></div></div>
@@ -330,86 +328,131 @@
     </div>
 
     <script>
-        /**
-         * 新增：进入游戏的过渡动画控制
-         */
-        function enterGame() {
-            const startScreen = document.getElementById('start-screen');
-            // 触发 CSS opacity 过渡
-            startScreen.style.opacity = '0';
-            // 等待 1.5 秒动画结束后彻底隐藏该元素，防止遮挡后续交互
-            setTimeout(() => {
-                startScreen.style.display = 'none';
-            }, 1500);
+        // ================= BGM 音频管理器 =================
+        const audioTracks = {
+            main: new Audio('bgm_main.mp3'),     // 正常理政BGM
+            crisis: new Audio('bgm_crisis.mp3'), // 危机压迫BGM 
+            ending: new Audio('bgm_ending.mp3')  // 游戏结束BGM
+        };
+
+        for (let key in audioTracks) {
+            audioTracks[key].loop = true; 
         }
 
-        /**
-         * 阶段一：项目初始化与底层数据结构 (State Management)
-         * 严格按照大纲数值设计初始化
-         */
+        let currentTrack = null;
+        let isAudioMuted = false; // 默认开启音乐，如需默认关闭可改为true
+
+        function playBGM(trackName) {
+            if (isAudioMuted) return;
+            if (currentTrack === audioTracks[trackName]) return; 
+
+            for (let key in audioTracks) {
+                audioTracks[key].pause();
+            }
+
+            if (audioTracks[trackName]) {
+                currentTrack = audioTracks[trackName];
+                currentTrack.play().catch(e => console.log("等待用户交互以播放音频..."));
+            }
+        }
+
+        function toggleAudio() {
+            isAudioMuted = !isAudioMuted;
+            const btn = document.getElementById('audio-toggle');
+            if (isAudioMuted) {
+                btn.innerText = '🔇 音乐关';
+                if (currentTrack) currentTrack.pause();
+            } else {
+                btn.innerText = '🔊 音乐开';
+                checkAndPlayBGM(); 
+            }
+        }
+
+        function checkAndPlayBGM() {
+            if (isAudioMuted) return;
+            
+            let isGameOver = false;
+            let hasCrisis = false;
+            
+            for (let key in gameState.resources) {
+                if (gameState.resources[key] <= 0) isGameOver = true;
+                if (gameState.resources[key] < 30) hasCrisis = true;
+            }
+
+            if (isGameOver || document.getElementById('event-text').innerHTML.includes("【时代回响】")) {
+                playBGM('ending');
+            } else if (hasCrisis) {
+                playBGM('crisis');
+            } else {
+                playBGM('main');
+            }
+        }
+        // ========================================================
+
+        function enterGame() {
+            const startScreen = document.getElementById('start-screen');
+            startScreen.style.opacity = '0';
+            setTimeout(() => { startScreen.style.display = 'none'; }, 1500);
+            
+            // 点击开始游戏时播放主界面BGM
+            playBGM('main');
+        }
+
         const gameState = {
-            // 四大核心数值
-            resources: {
-                wealth: 65,   // 财：初始65。低于20破产
-                military: 50, // 武：初始50。低于20战败
-                people: 60,   // 民：初始60。低于20起义
-                power: 75     // 权：初始75。低于20政变/软禁
-            },
-            // 权臣系统模型
+            resources: { wealth: 65, military: 50, people: 60, power: 75 },
             ministers: {
                 liHongzhang: { name: "李鸿章", power: 40, loyalty: 70 },
                 zuoZongtang: { name: "左宗棠", power: 30, loyalty: 80 },
                 wengTonghe:  { name: "翁同龢", power: 50, loyalty: 60 }
             },
-            // 游戏全局环境数据
             gameData: {
                 year: 1861,
-                tension: 0,       // 国际局势 >80 全面战争
-                actionPoints: 1,  // 每回合行动点
-                maxAp: 1
+                tension: 0,
+                actionPoints: 1,
+                maxAp: 1,
+                hasNaturalDisasterOccurred: false 
             }
         };
 
-        // 核心主线事件库
         const storyEvents = {
             1864: {
                 title: "太平天国终结",
                 desc: "曾国藩攻克天京，长达十余年的太平天国运动终于被镇压。然湘军、淮军做大，地方督抚隐隐有尾大不掉之势。",
                 options: [
-                    { text: "下旨裁军，将兵权收归中央", w: 10, m: -15, p: 5, po: 15, msg: "你强令地方裁军，收回了部分兵权，但军队战斗力大幅下降。" },
-                    { text: "论功行赏，默许地方督抚拥兵", w: -15, m: 15, p: 5, po: -15, msg: "你选择安抚地方，换来了强大的武力，但中央集权进一步衰落。" }
+                    { text: "下旨裁军，将兵权收归中央", w: 10, m: -15, p: 5, po: 15, msg: "【旁白】圣旨下达，江南大营强行收缴湘淮军械。曾国藩虽未反，但地方将领心生怨怼。史官记下：虽去大患，却自毁长城，清军再无往日锐气。" },
+                    { text: "论功行赏，默许地方督抚拥兵", w: -15, m: 15, p: 5, po: -15, msg: "【旁白】你选择加官进爵，封曾国藩等人为侯伯。湘淮军欢呼雀跃，武力大盛。然自此之后，朝廷政令难出京畿，督抚专权之祸，已然埋下伏笔。" }
                 ]
             },
             1875: {
                 title: "同治驾崩",
                 desc: "同治帝驾崩，无嗣。朝野震动，为了继续大清的国祚（以及你手中的权力），你需要选定一位继承人。",
                 options: [
-                    { text: "违背祖制，立年幼的光绪帝", w: -5, m: -5, p: -5, po: 20, msg: "你违背祖制立幼子，引来朝野非议，但成功保住了你的大权。" },
-                    { text: "遵循祖制，立成年宗室", w: 5, m: 5, p: 10, po: -40, msg: "你选择了国家社稷，放弃了手中的大权。朝野赞誉，但你已大权旁落。" }
+                    { text: "违背祖制，立年幼的光绪帝", w: -5, m: -5, p: -5, po: 20, msg: "【旁白】醇亲王之子载湉被抱入宫中，是为光绪帝。你在垂帘后冷眼看着群臣跪拜，清流言官的痛骂声被隔绝在太和殿外。权力的权杖，依旧牢牢握在你的手中。" },
+                    { text: "遵循祖制，立成年宗室", w: 5, m: 5, p: 10, po: -40, msg: "【旁白】你终究未能违逆祖宗家法，立了成年的溥伦。新帝登基，朝野盛赞你‘高风亮节’。但随着新帝亲政，你在南书房的椅子被悄然撤走，只留下一声叹息。" }
                 ]
             },
             1884: {
                 title: "中法海战",
                 desc: "法军挑衅，福建水师全军覆没，战火蔓延至台湾与镇南关。左宗棠等主战派请求死战，李鸿章则暗示议和。",
                 options: [
-                    { text: "乘胜追击，拒不议和", w: -20, m: 10, p: 15, po: -5, msg: "你力排众议坚持开战。虽取得镇南关大捷，但国库几乎耗尽。" },
-                    { text: "乘胜即收，签订和约", w: -5, m: -10, p: -15, po: 5, msg: "你选择了“不败而败”的议和，保全了部分实力，但天下士子对你口诛笔伐。" }
+                    { text: "乘胜追击，拒不议和", w: -20, m: 10, p: 15, po: -5, msg: "【旁白】前线将士死战不退，镇南关大捷的捷报传回京城，天下震动！列强终于低头，但当你看着户部呈上来的空空如也的账本时，不知这胜利的代价是否过于沉重。" },
+                    { text: "乘胜即收，签订和约", w: -5, m: -10, p: -15, po: 5, msg: "【旁白】《中法新约》签订的消息传出，举国哗然。‘不败而败’的屈辱让天下士子痛哭流涕，清流的折子如雪片般飞向你的御案，你只能独自咽下这苦果。" }
                 ]
             },
             1894: {
                 title: "甲午战争",
                 desc: "日本在朝鲜挑起战端，北洋水师在黄海迎战。此战关乎东亚霸权与帝国国运。",
                 options: [
-                    { text: "倾尽国库，死战到底", w: -30, m: -20, p: 10, po: -10, msg: "你抽调全国之力支援前线。虽然北洋水师拼死抵抗，但最终依然惨败。大清国际地位一落千丈。", shake: true },
-                    { text: "避战保船，乞求列强调停", w: -15, m: -15, p: -25, po: -15, msg: "你寄希望于列强，结果不仅被迫割地赔款，威信更是扫地。", shake: true }
+                    { text: "倾尽国库，死战到底", w: -30, m: -20, p: 10, po: -10, msg: "【旁白】黄海之上，硝烟弥漫，北洋水师的龙旗伴随着致远舰的沉没而缓缓降下。你倾尽了国库，依然未能挽回败局。东亚的霸权在此刻彻底易主，大清的虚弱暴露无遗。", shake: true },
+                    { text: "避战保船，乞求列强调停", w: -15, m: -15, p: -25, po: -15, msg: "【旁白】你幻想着洋人能主持公道，却等来了《马关条约》的丧钟。割地、赔款，帝国最后的尊严被踩在脚下。民间群情激愤，对朝廷的最后一丝幻想也随之破灭。", shake: true }
                 ]
             },
             1898: {
                 title: "戊戌变法",
                 desc: "光绪帝重用康有为等人，试图推行维新变法。然而变法触动了旧官僚的根本利益，朝野动荡不安。",
                 options: [
-                    { text: "支持变法，推行新政", w: 10, m: 0, p: 20, po: -30, msg: "你选择支持光绪，变法得以推行。民心大悦，但你遭到了守旧派的拼死反扑，权力被极大削弱。" },
-                    { text: "发动政变，囚禁光绪", w: -5, m: 5, p: -20, po: 30, msg: "你发动戊戌政变，囚禁了皇帝，杀害了变法臣子。你保住了绝对的权力，但进步的火种被你亲手掐灭。" }
+                    { text: "支持变法，推行新政", w: 10, m: 0, p: 20, po: -30, msg: "【旁白】变法诏书一道道颁布，大清仿佛焕发了新的生机。民间欢欣鼓舞，但你发现，那些旧官僚的眼神越来越冷，而你调动军队的虎符，也渐渐不再灵验。" },
+                    { text: "发动政变，囚禁光绪", w: -5, m: 5, p: -20, po: 30, msg: "【旁白】瀛台的秋风凄厉，光绪帝的哀求声被锁在深宫。菜市口，戊戌六君子的鲜血染红了法场。你守住了绝对的权力，也亲手掐灭了帝国温和改革的希望。" }
                 ]
             },
             1908: {
@@ -421,103 +464,169 @@
             }
         };
 
-        // 随机突发事件库 (3个正向，5个负向)
         const randomEvents = [
-            // 正向事件
+            // ================= 7件 正向事件 =================
             {
-                title: "江南大丰收",
+                type: 'positive', title: "江南大丰收",
                 desc: "两江总督上奏，今年江南各省风调雨顺，粮食迎来大丰收。地方府库充盈，一派繁荣景象。",
                 options: [
-                    { text: "将盈余尽数上缴中央，充实国库", w: 20, m: -5, p: -5, po: 10, msg: "中央国库得此极大充实，但地方百姓与官员的负担并未减轻。" },
-                    { text: "减免赋税，藏富于民", w: 5, m: 0, p: 20, po: 5, msg: "你下旨减免赋税，江南百姓感恩戴德，民心大振。" }
+                    { text: "将盈余尽数上缴中央，充实国库", w: 20, m: 0, p: -5, po: 5, msg: "【旁白】中央国库得此充实，但地方百姓负担并未减轻。" },
+                    { text: "减免赋税，藏富于民", w: 0, m: 0, p: 20, po: 0, msg: "【旁白】你下旨减免赋税，江南百姓感恩戴德，民心大振。" },
+                    { condition: () => gameState.resources.power > 70, text: "[皇权极盛] 丰年祭天，大赦天下", w: -10, m: 0, p: 25, po: 15, msg: "【旁白】你携极盛之皇权祭天，四海归心，大清仿佛重回康乾盛世！" }
                 ]
             },
             {
-                title: "兵工厂初见成效",
+                type: 'positive', title: "兵工厂初见成效",
                 desc: "多年前拨款筹建的制造总局终于初见成效，第一批仿制的洋枪洋炮已经产出，性能优良。",
                 options: [
-                    { text: "继续重金投入，扩大产能", w: -15, m: 20, p: 0, po: 0, msg: "你咬牙继续拨款，大清的军队终于有了一点近现代化的样子。" },
-                    { text: "适可而止，武装近卫即可", w: 0, m: 5, p: 0, po: 5, msg: "你保守地将这批武器装备给了紫禁城卫军，保住了国库，但也错失了强军良机。" }
+                    { text: "继续重金投入，武装新军", w: -15, m: 20, p: 0, po: 0, msg: "【旁白】你咬牙继续拨款，大清的军队终于有了一点近现代化的样子。" },
+                    { text: "适可而止，仅武装紫禁卫军", w: 0, m: 5, p: 0, po: 10, msg: "【旁白】你保守地将武器留给了近卫军，保住了国库与皇威，但也错失强军良机。" },
+                    { condition: () => gameState.resources.wealth > 70, text: "[国库充盈] 斥巨资全面换装，建立西式兵团", w: -30, m: 35, p: 5, po: 5, msg: "【旁白】充盈的国库让你底气十足，一支完全西式装备的精锐之师拔地而起！" }
                 ]
             },
             {
-                title: "举办特开恩科",
+                type: 'positive', title: "举办特开恩科",
                 desc: "为笼络天下士子，朝廷提议举办特开恩科，选拔人才。各省学子纷纷进京赶考。",
                 options: [
-                    { text: "破格取士，提拔寒门子弟", w: -5, m: 0, p: 15, po: 10, msg: "你越过旧官僚提拔了一批年轻才俊，皇权大为巩固，民间赞誉有加。" },
-                    { text: "遵循旧例，安抚八旗与旧官僚", w: 0, m: 0, p: 5, po: -5, msg: "你选择了最稳妥的办法，官员们很满意，但朝堂的暮气依然如故。" }
+                    { text: "破格取士，提拔寒门子弟", w: -5, m: 0, p: 15, po: 10, msg: "【旁白】你越过旧官僚提拔了一批年轻才俊，皇权大为巩固，民间赞誉有加。" },
+                    { text: "遵循旧例，安抚八旗与旧官僚", w: 0, m: 0, p: 5, po: -5, msg: "【旁白】你选择了最稳妥的办法，官员们很满意，但朝堂的暮气依然如故。" }
                 ]
             },
-            // 负向事件
             {
-                title: "地方贪腐大案",
-                desc: "御史拼死上奏，揭发两广地区官员官官相护，贪污巨额税款，致使国库亏空。",
+                type: 'positive', title: "海关税收大增",
+                desc: "随着洋务运动推进，各通商口岸贸易繁荣，新任大清海关总税务司上交了一大笔远超预期的关税结余。",
                 options: [
-                    { text: "兴大狱彻查，得罪地方督抚", w: 15, m: -15, p: 10, po: 5, msg: "你痛下杀手抄没家产，国库充盈，但地方督抚大为不满，军队武备受挫。" },
-                    { text: "法不责众，重重拿起轻轻放下", w: -15, m: 0, p: -15, po: -15, msg: "你顾忌牵连过广选择了妥协。贪官污吏更加猖狂，皇权威信扫地。" }
+                    { text: "收入内帑，充作宫廷与行政开支", w: 25, m: 0, p: -5, po: 5, msg: "【旁白】国库获得了极大补充，你的手头宽裕了许多。" },
+                    { text: "专款专用，全部用于购买西洋军舰", w: 0, m: 20, p: 0, po: -5, msg: "【旁白】你将巨款投入海军建设，大清的海防力量获得了质的飞跃。" },
+                    { condition: () => gameState.resources.military > 70, text: "[军威浩荡] 震慑洋关，强势收回部分海关自主权", w: 30, m: -5, p: 15, po: 15, msg: "【旁白】由于大清军力强盛，洋人不敢造次，你成功收回了部分自主权，举国欢腾！" }
                 ]
             },
             {
-                title: "南方百年大旱",
+                type: 'positive', title: "西洋技师来华",
+                desc: "一批精通矿业与铁路的西洋工程师抵达京城，自荐为大清效力，承诺能极大改善基础设施。",
+                options: [
+                    { text: "顶住清流压力，重金聘请", w: -15, m: 10, p: 10, po: -5, msg: "【旁白】基础设施的改善让国力上升，但清流言官对你“亲近洋人”颇有微词。" },
+                    { text: "顺应清流，婉言谢绝", w: 0, m: -5, p: -5, po: 10, msg: "【旁白】你为了稳固朝局拒绝了技术，清流们对你的“骨气”大加赞赏。" }
+                ]
+            },
+            {
+                type: 'positive', title: "地方团练报捷",
+                desc: "地方乡绅自发组织的团练在剿匪中立下大功，保境安民，甚至比绿营正规军还要骁勇。",
+                options: [
+                    { text: "拨发饷银，正式收编为官军", w: -10, m: 15, p: 5, po: 5, msg: "【旁白】你花钱将这支力量收编，既增强了军力，也避免了地方武装做大。" },
+                    { text: "赐予虚衔，任其在地方自由发展", w: 0, m: 10, p: 0, po: -15, msg: "【旁白】你省下了军费，但地方团练的自主性越来越强，中央威信受到挑战。" }
+                ]
+            },
+            {
+                type: 'positive', title: "探明大型矿脉",
+                desc: "勘探队在直隶一带探明了一处储量极大的煤铁矿脉，若能开采，必能获利丰厚。",
+                options: [
+                    { text: "官督商办，朝廷抽取高额红利", w: 20, m: 0, p: -10, po: 5, msg: "【旁白】朝廷获得了滚滚财源，但这挤压了民间商人的生存空间。" },
+                    { text: "放开民间资本，轻徭薄赋", w: 5, m: 0, p: 15, po: -5, msg: "【旁白】你让利于民，民间工商业得到发展，百姓生活改善。" }
+                ]
+            },
+
+            // ================= 4件 负面事件 (天灾) - 每局触发一次 =================
+            {
+                type: 'natural', title: "南方百年大旱",
                 desc: "大范围旱灾席卷南方，赤地千里，数百万饥民流离失所，急需大规模赈济。",
                 options: [
-                    { text: "开内帑，全力赈灾", w: -25, m: 0, p: 15, po: 5, msg: "你倾尽国库赈济灾民，无数百姓得以存活，你的声望达到了顶峰。" },
-                    { text: "国库空虚，令地方自救", w: 0, m: -5, p: -25, po: -10, msg: "你眼睁睁看着灾民饿死，江南饿殍遍野，民怨沸腾到了极点。" }
+                    { text: "开内帑，全力赈灾", w: -25, m: 0, p: 15, po: 5, msg: "【旁白】你倾尽国库赈济灾民，无数百姓得以存活，你的声望大涨。" },
+                    { text: "国库空虚，令地方自救", w: 0, m: -5, p: -25, po: -10, msg: "【旁白】你眼睁睁看着灾民饿死，江南饿殍遍野，民怨沸腾到了极点。" }
                 ]
             },
             {
-                title: "民教流血冲突",
-                desc: "地方百姓因修建教堂破坏风水，与外国传教士发生流血冲突，列强公使强烈抗议并施压。",
-                options: [
-                    { text: "严惩领头百姓，平息洋人怒火", w: 0, m: 0, p: -20, po: -10, msg: "你屈从于洋人的压力，杀了自己的人。百姓心寒，你的威信受损。" },
-                    { text: "包庇百姓，自掏腰包赔款道歉", w: -20, m: 0, p: 15, po: 5, msg: "你花了一大笔银子摆平了洋人，保住了涉事百姓，民间传颂你的仁德。" }
-                ]
-            },
-            {
-                title: "黄河决口",
+                type: 'natural', title: "黄河决口",
                 desc: "黄河在中下游决堤，洪水泛滥，哀鸿遍野。灾民流离失所，地方官员十万火急请求赈灾款。",
                 options: [
-                    { text: "开仓放粮，拨款赈灾 (耗财)", w: -15, m: 0, p: 10, po: 0, msg: "你拨下巨额赈灾款，救民于水火。虽国库吃紧，但百姓感恩戴德。" },
-                    { text: "国库空虚，令地方自筹 (失民心)", w: 0, m: 0, p: -20, po: -5, msg: "你无力赈灾，任由灾民自生自灭。民间怨声载道，甚至有造反的苗头。" }
+                    { text: "开仓放粮，急调大款赈灾", w: -20, m: 0, p: 10, po: 0, msg: "【旁白】你拨下巨额赈灾款，救民于水火。虽国库吃紧，但百姓感恩戴德。" },
+                    { text: "国库空虚，任由灾民流亡", w: 0, m: 0, p: -25, po: -5, msg: "【旁白】你无力赈灾，任由灾民自生自灭。民间怨声载道，甚至有造反苗头。" },
+                    { condition: () => gameState.resources.wealth > 75, text: "[国库充盈] 拨天量巨款，不仅赈灾，更彻底兴修水利", w: -40, m: 0, p: 30, po: 15, msg: "【旁白】你以超凡的魄力砸下海量白银，黄河水患竟被彻底根治，万民为你立生祠！" }
                 ]
             },
             {
-                title: "列强兵舰游弋",
+                type: 'natural', title: "华北大蝗灾",
+                desc: "遮天蔽日的蝗群袭击了华北平原，庄稼颗粒无收，地方官府甚至无力维持治安。",
+                options: [
+                    { text: "蠲免赋税，开仓平抑粮价", w: -15, m: 0, p: 10, po: 0, msg: "【旁白】朝廷的及时介入稳住了局势，百姓挺过了灾荒。" },
+                    { text: "强行征收秋粮，充实军需", w: 10, m: 0, p: -30, po: -10, msg: "【旁白】你不管百姓死活强行收税，多地爆发了严重的抗税暴乱。" }
+                ]
+            },
+            {
+                type: 'natural', title: "京畿大地震",
+                desc: "京畿地区突发剧烈地震，波及紫禁城，多处宫殿受损。民间流言四起，称这是“天谴”。",
+                options: [
+                    { text: "下罪己诏，并拨专款安抚灾民", w: -15, m: 0, p: 15, po: -10, msg: "【旁白】你放下了九五之尊的架子，百姓虽然安定了，但皇权神圣性大打折扣。" },
+                    { text: "封锁消息，严惩造谣生事者", w: 0, m: 0, p: -15, po: 5, msg: "【旁白】你用强硬手段压制了流言，但地下的民怨如同熔岩般积聚。" }
+                ]
+            },
+
+            // ================= 6件 负面事件 (人祸) =================
+            {
+                type: 'man-made', title: "地方贪腐大案",
+                desc: "御史拼死上奏，揭发两广地区官员官官相护，贪污巨额税款，致使国库亏空。",
+                options: [
+                    { text: "兴大狱彻查，抄没家产", w: 20, m: -10, p: 5, po: 5, msg: "【旁白】你痛下杀手，国库充盈，但地方督抚大为不满，军队武备受挫。" },
+                    { text: "法不责众，重重拿起轻轻放下", w: -10, m: 0, p: -15, po: -15, msg: "【旁白】你顾忌牵连过广选择了妥协。贪官污吏更加猖狂，皇权威信扫地。" },
+                    { condition: () => gameState.resources.power > 80, text: "[皇权极盛] 雷霆手段，革故鼎新整肃吏治", w: 25, m: 0, p: 20, po: -5, msg: "【旁白】在你绝对的皇权威慑下，贪官无所遁形，不仅追回巨款，更换来吏治清明！" }
+                ]
+            },
+            {
+                type: 'man-made', title: "民教流血冲突",
+                desc: "地方百姓因修建教堂破坏风水，与外国传教士发生流血冲突，列强公使强烈抗议并施压。",
+                options: [
+                    { text: "严惩领头百姓，平息洋人怒火", w: 0, m: 0, p: -20, po: -10, msg: "【旁白】你屈从于洋人的压力，杀了自己的人。百姓心寒，你的威信受损。" },
+                    { text: "包庇百姓，自掏腰包巨额赔款", w: -20, m: 0, p: 10, po: 5, msg: "【旁白】你花了一大笔银子摆平了洋人，保住了涉事百姓，民间传颂你的仁德。" },
+                    { condition: () => gameState.resources.military > 70, text: "[军威浩荡] 驻军威慑，勒令洋人公使闭嘴", w: 0, m: 0, p: 20, po: 15, msg: "【旁白】新军火炮齐指租界，洋人见你军威强盛，态度瞬间软化。大清颜面大存！" }
+                ]
+            },
+            {
+                type: 'man-made', title: "捻军余部作乱",
+                desc: "北方捻军残部死灰复燃，聚啸山林，并开始攻打州县，严重威胁地方安定。",
+                options: [
+                    { text: "急调地方绿营镇压", w: -15, m: -10, p: 5, po: 0, msg: "【旁白】绿营兵战力低下，虽最终平叛，但耗费了大量钱粮，军威受损。" },
+                    { text: "以高官厚禄招安叛将", w: -20, m: 5, p: 0, po: -15, msg: "【旁白】你花钱买和平，虽然叛军归降补充了军力，但朝廷软弱的形象暴露无遗。" },
+                    { condition: () => gameState.resources.military > 65, text: "[武力强盛] 出动新式火器营，雷霆扫穴", w: -5, m: 5, p: 15, po: 15, msg: "【旁白】赫赫军威之下，叛军如螳臂当车，瞬间灰飞烟灭！天下震动，皇威大振！" }
+                ]
+            },
+            {
+                type: 'man-made', title: "军费遭到挪用",
+                desc: "前线将领密报，发往下方的军饷与购械款被兵部层层扒皮，前线士兵怨声载道。",
+                options: [
+                    { text: "杀一儆百，抄没兵部涉事官员", w: 15, m: -10, p: 5, po: 10, msg: "【旁白】你雷厉风行追回了赃款并立威，但前线补给依然被短暂延误了。" },
+                    { text: "为稳军心，咬牙再次拨款补齐", w: -20, m: 5, p: 0, po: -15, msg: "【旁白】你自掏腰包填了窟窿，将领们很高兴，但这等同于默许了这种潜规则。" }
+                ]
+            },
+            {
+                type: 'man-made', title: "宗室奢靡之风",
+                desc: "皇亲国戚大肆修建园林，甚至公然克扣地方税收供其享乐，百姓对此怨声载道。",
+                options: [
+                    { text: "痛下杀手，严惩涉事亲王", w: 10, m: 0, p: 15, po: -20, msg: "【旁白】你大义灭亲抄了亲王的家。百姓拍手称快，但整个宗室集团与你离心离德。" },
+                    { text: "听之任之，仅作口头申饬", w: -10, m: 0, p: -20, po: 10, msg: "【旁白】你包庇了宗室，保住了统治集团内部的和气，但让天下百姓彻底心寒。" }
+                ]
+            },
+            {
+                type: 'man-made', title: "列强兵舰游弋",
                 desc: "洋人的坚船利炮在海域附近游弋，态度嚣张，并以保护侨民为由要求大清赔偿部分“通商损失”。",
                 options: [
-                    { text: "破财消灾，赔款了事 (耗财降民心)", w: -15, m: 0, p: -5, po: -5, msg: "你咽下了这口气，赔偿了洋人。虽然避免了战争，但朝野皆感屈辱。" },
-                    { text: "强硬驱逐，展现军威 (依据军力判定)", w: 0, m: 0, p: 0, po: 0, msg: "你的强硬态度引发了冲突！", 
-                      dynamicAction: () => {
-                          if (gameState.resources.military > 60) {
-                              modifyStats(0, 5, 15, 10, "我军将士奋勇开炮，击退了洋人军舰！大清威震海疆，民心大振！");
-                          } else {
-                              triggerScreenShake();
-                              modifyStats(-20, -15, -15, -10, "我军水师武备松弛，被洋人轻松击溃。不仅被迫加倍赔偿，更是颜面尽失！");
-                          }
-                      }
-                    }
+                    { text: "破财消灾，赔款了事", w: -20, m: 0, p: -5, po: -5, msg: "【旁白】你咽下了这口气，赔偿了洋人。虽然避免了战争，但朝野皆感屈辱。" },
+                    { text: "强烈抗议，拒不赔款", w: 0, m: -15, p: -10, po: -10, msg: "【旁白】洋人军舰炮轰了炮台，由于水师羸弱，你不仅挨了打，最后还是被迫退让。" },
+                    { condition: () => gameState.resources.military >= 65, text: "[武力强盛] 坚船利炮，予以痛击！", w: -10, m: 5, p: 20, po: 15, msg: "【旁白】北洋舰队果断开火，将洋人军舰击退！大清威震海疆，洗刷了百年耻辱！" }
                 ]
             }
         ];
 
-        /**
-         * 阶段二：UI 渲染与数值绑定 (UI & Data Binding)
-         */
         function updateUI() {
-            // 更新顶部年份与AP
             document.getElementById('ui-year').innerText = `公元 ${gameState.gameData.year} 年`;
             document.getElementById('ui-ap').innerText = `行动点: ${gameState.gameData.actionPoints} / ${gameState.gameData.maxAp}`;
 
-            // 更新四大数值
             updateSingleStat('wealth', gameState.resources.wealth);
             updateSingleStat('military', gameState.resources.military);
             updateSingleStat('people', gameState.resources.people);
             updateSingleStat('power', gameState.resources.power);
         }
 
-        // 单个数值更新逻辑 (包含危险警报)
         function updateSingleStat(statKey, value) {
-            // 限制数值在 0-100 之间
             value = Math.max(0, Math.min(100, value));
             gameState.resources[statKey] = value; 
 
@@ -525,20 +634,18 @@
             const valText = document.getElementById(`val-${statKey}`);
             const barFill = document.getElementById(`bar-${statKey}`);
 
-            // 更改文字
             valText.innerText = value;
-            // 更改进度条宽度
             barFill.style.width = `${value}%`;
 
-            // 数值律动 (Pulse) 检查：< 30 触发危险红光动画
             if (value < 30) {
                 container.classList.add('danger');
             } else {
                 container.classList.remove('danger');
             }
+            
+            checkAndPlayBGM();
         }
 
-        // --- 核心交互逻辑 (隐藏了具体数值变化) ---
         function startReign() {
             document.getElementById('event-text').innerHTML = "你接过了权力的权杖，大清的命运交到了你的手上。<br><br>此时，左宗棠上书请求拨款平定西北；李鸿章请求购买洋枪洋炮；翁同龢则告诫你不可轻信武将，应固守祖制。";
             document.getElementById('options-area').innerHTML = `
@@ -558,15 +665,15 @@
             updateUI();
 
             if(gameState.gameData.actionPoints <= 0) {
-                let html = message ? `<div style="color:#bfae8c; margin-bottom: 20px; font-size: 18px;">${message}</div>` : "";
-                html += `<button class="btn-option" style="color:#a8c; border-color:#a8c; text-align:center;" onclick="nextTurn()">结束本年，进入下一年</button>`;
-                document.getElementById('options-area').innerHTML = html;
+                if (message) {
+                    document.getElementById('event-text').innerHTML += `<div style="font-size: 20px; color: #e6cc98; line-height: 1.8; margin-top: 30px; padding-top: 20px; border-top: 1px dashed #5a4b3c;">${message}</div>`;
+                }
+                document.getElementById('options-area').innerHTML = `<button class="btn-option" style="color:#cfa86e; border-color:#8a6c42; text-align:center; font-weight:bold;" onclick="nextTurn()">结束本年，进入下一年</button>`;
             }
         }
 
-        // 阶段三 & 四：事件系统与南书房权臣交互
         function showSouthStudy() {
-            document.getElementById('event-text').innerHTML = "今年天下暂无大患。你端坐南书房，开始处理日常朝政。<br><br><span style='font-size:15px; color:#8a735c;'>(你可以选择一位权臣进行干预，以平衡朝局。注意：臣子权力过大将导致政令不通！)</span>";
+            document.getElementById('event-text').innerHTML = "今年天下暂无大患。你端坐南书房，开始处理日常朝政。<br><br><span style='font-size:15px; color:#8a735c;'>(你可以选择一位权臣进行干预。注意：放权会提升其权力但降低忠诚，若臣子权重>80且忠诚<40，将发生擅权篡改圣旨的恶性事件！)</span>";
             let html = "";
             for (let key in gameState.ministers) {
                 let m = gameState.ministers[key];
@@ -577,13 +684,18 @@
                         <span style="color:${m.loyalty < 40 ? '#ff5555' : '#8a735c'}">忠诚: ${m.loyalty}</span>
                     </div>
                     <div class="minister-actions">
-                        <button onclick="interactMinister('${key}', 'reward')" title="耗费钱财提升忠诚">恩赏</button>
-                        <button onclick="interactMinister('${key}', 'empower')" title="下放皇权提升臣子权重与忠诚">放权</button>
-                        <button onclick="interactMinister('${key}', 'reprimand')" title="重振皇权但会严重降低臣子忠诚与权重">敲打</button>
+                        <button onclick="interactMinister('${key}', 'reward')" title="耗费钱财，提升忠诚，略微增加权力">恩赏</button>
+                        <button onclick="interactMinister('${key}', 'empower')" title="下放皇权，大幅提升权力，但因骄横而降低忠诚">委以重任</button>
+                        <button onclick="interactMinister('${key}', 'reprimand')" title="重振皇权，大幅削弱权力，但引发极大怨恨">敲打</button>
                     </div>
                 </div>`;
             }
-            // 不操作直接下一年的选项
+            
+            if (gameState.resources.wealth <= 30) {
+                html += `<div style="margin-top: 15px; margin-bottom: 5px; color: #ff5555; font-weight: bold;">【危局应对】</div>`;
+                html += `<button class="btn-option" style="border-color: #ff5555; color: #ff5555; background-color: rgba(255, 85, 85, 0.1);" onclick="modifyStats(25, -5, -25, -10, '【旁白】国库见底，你被迫下旨向民间加派“厘金”与各种杂税。银两带着百姓的血泪运入京城，勉强解了燃眉之急，但天下怨声载道，大清根基剧烈动摇。')">横征暴敛 (牺牲大量民心与皇权，换取财力)</button>`;
+            }
+
             html += `<button class="btn-option" style="margin-top:10px; color:#8a735c;" onclick="modifyStats(0,0,0,0, '本年你无为而治，平稳度过。')">不予理会，直接跳过本年</button>`;
             
             document.getElementById('options-area').innerHTML = html;
@@ -593,33 +705,31 @@
             let min = gameState.ministers[ministerKey];
             let msg = "";
             
-            // 篡改干预系统 (Interference)
-            // 检查是否有权臣篡改政令 (权重>80且忠诚<40)
             let usurper = Object.values(gameState.ministers).find(m => m.power > 80 && m.loyalty < 40);
             
-            if (usurper && Math.random() < 0.8) { // 80% 极高概率篡改
-                msg = `<span style="color:#ff5555; font-size: 24px; font-weight:bold;">【矫诏篡改！】</span><br><br>你刚下达的旨意，就被 ${usurper.name} 的门生故吏在内阁强行驳回！<br>他以“不合祖宗家法”为由，强行替你做出了决定。你的皇权受到了严重挑战！`;
-                gameState.resources.power -= 15;
+            if (usurper && Math.random() < 0.8) { 
+                msg = `<span style="color:#ff5555; font-size: 24px; font-weight:bold;">【矫诏篡改！】</span><br><br>你刚下达的旨意，就被 ${usurper.name} 的门生故吏在内阁强行驳回！<br>他权倾朝野且心生不臣，以“不合祖宗家法”为由，强行替你做出了决定。皇权遭受重创！`;
+                gameState.resources.power -= 20;
                 triggerInkSplash();
             } else {
                 if (action === 'reward') {
-                    msg = `你大开内帑，厚赏了 ${min.name}。他大呼万岁，对你更加忠心，但国库不出意外地缩水了。`;
+                    msg = `你大开内帑，厚赏了 ${min.name}。他对你更加忠心，但也借着赏赐在朝中拉拢了部分人心。`;
                     gameState.resources.wealth -= 10;
-                    min.loyalty += 10;
+                    min.loyalty += 15;
+                    min.power += 5;
                 } else if (action === 'empower') {
-                    msg = `你将朝廷要务全权委派给 ${min.name}。他在朝中势力大涨，虽然办事尽心，但你的皇权进一步旁落。`;
-                    gameState.resources.power -= 8;
-                    min.power += 15;
-                    min.loyalty += 5;
+                    msg = `你将朝廷要务全权委派给 ${min.name}。他大权在握，虽然办事尽心，但渐渐生出骄横之心，对你的敬畏变少了。`;
+                    gameState.resources.power -= 10;
+                    min.power += 20;
+                    min.loyalty -= 10;
                 } else if (action === 'reprimand') {
-                    msg = `你找了个由头，严词申饬了 ${min.name}。你成功打压了他的势力，重振了皇权，但也让他心生怨恨。`;
-                    gameState.resources.power += 12;
-                    min.power -= 15;
-                    min.loyalty -= 15;
+                    msg = `你找了个由头，严词申饬了 ${min.name}。你成功打压了他的势力，重振了皇权，但也让他心生极大的怨恨。`;
+                    gameState.resources.power += 15;
+                    min.power -= 20;
+                    min.loyalty -= 20;
                 }
             }
             
-            // 限制大臣属性在 0-100
             for(let k in gameState.ministers) {
                 gameState.ministers[k].power = Math.max(0, Math.min(100, gameState.ministers[k].power));
                 gameState.ministers[k].loyalty = Math.max(0, Math.min(100, gameState.ministers[k].loyalty));
@@ -636,7 +746,6 @@
             
             let optionsHtml = "";
             evt.options.forEach(opt => {
-                // 将对象转为字符串参数，注意转义
                 let msgEscaped = opt.msg.replace(/'/g, "\\'");
                 let extraAction = "";
                 if (opt.shake) extraAction += "triggerScreenShake(); ";
@@ -652,19 +761,58 @@
         }
 
         function loadRandomEvent() {
-            const evt = randomEvents[Math.floor(Math.random() * randomEvents.length)];
-            document.getElementById('event-text').innerHTML = `<span style="font-size:24px; color:#a87c51; font-weight:bold;">【突发：${evt.title}】</span><br><br>${evt.desc}`;
+            let availableEvents = randomEvents.filter(e => {
+                if (e.type === 'natural' && gameState.gameData.hasNaturalDisasterOccurred) {
+                    return false;
+                }
+                return true;
+            });
+
+            let positiveEvents = availableEvents.filter(e => e.type === 'positive');
+            let negativeEvents = availableEvents.filter(e => e.type !== 'positive');
+
+            let evt;
+            if (Math.random() < 0.60 && negativeEvents.length > 0) {
+                evt = negativeEvents[Math.floor(Math.random() * negativeEvents.length)];
+            } else if (positiveEvents.length > 0) {
+                evt = positiveEvents[Math.floor(Math.random() * positiveEvents.length)];
+            } else {
+                evt = availableEvents[Math.floor(Math.random() * availableEvents.length)]; 
+            }
+            
+            if (evt.type === 'natural') {
+                gameState.gameData.hasNaturalDisasterOccurred = true;
+            }
+
+            let typeTitle = "";
+            if (evt.type === 'natural') typeTitle = "天灾";
+            else if (evt.type === 'man-made') typeTitle = "人祸";
+            else typeTitle = "捷报";
+
+            document.getElementById('event-text').innerHTML = `<span style="font-size:24px; color:#a87c51; font-weight:bold;">【${typeTitle}：${evt.title}】</span><br><br>${evt.desc}`;
             
             let optionsHtml = "";
             evt.options.forEach(opt => {
+                if (opt.condition && !opt.condition()) {
+                    return; 
+                }
+
+                let btnStyle = opt.condition ? "border-color: #cfa86e; color: #cfa86e; font-weight: bold; background-color: rgba(207, 168, 110, 0.1);" : "";
+
                 if (opt.dynamicAction) {
                     window.tempDynamicAction = opt.dynamicAction;
-                    optionsHtml += `<button class="btn-option" onclick="window.tempDynamicAction()">${opt.text}</button>`;
+                    optionsHtml += `<button class="btn-option" style="${btnStyle}" onclick="window.tempDynamicAction()">${opt.text}</button>`;
                 } else {
                     let msgEscaped = opt.msg.replace(/'/g, "\\'");
-                    optionsHtml += `<button class="btn-option" onclick="modifyStats(${opt.w}, ${opt.m}, ${opt.p}, ${opt.po}, '${msgEscaped}')">${opt.text}</button>`;
+                    optionsHtml += `<button class="btn-option" style="${btnStyle}" onclick="modifyStats(${opt.w}, ${opt.m}, ${opt.p}, ${opt.po}, '${msgEscaped}')">${opt.text}</button>`;
                 }
             });
+
+            if (gameState.resources.wealth <= 30) {
+                optionsHtml += `<div style="margin-top: 15px; margin-bottom: 5px; color: #ff5555; font-weight: bold;">【危局应对】</div>`;
+                optionsHtml += `<button class="btn-option" style="border-color: #ff5555; color: #ff5555; background-color: rgba(255, 85, 85, 0.1);" onclick="modifyStats(25, -5, -25, -10, '【旁白】无视当前局势，你强行下旨向民间加派“厘金”与苛捐杂税。这笔沾满血泪的银两填补了国库，但民间的怒火已如火山般濒临爆发！')">强行横征暴敛 (牺牲大量民心与皇权，强行回血)</button>`;
+            }
+
             document.getElementById('options-area').innerHTML = optionsHtml;
         }
 
@@ -679,23 +827,29 @@
                 overMsg = "【B级结局：晚清残照】<br><br>丧钟长鸣。你的一生都在试图挽救，却发现每一次挣扎都让绳索勒得更紧。版图破碎，民力枯竭。你尽力了，但历史的车轮依然无情地碾过了你的所有努力。大清，终究只剩下一抹夕阳残照。";
             }
 
+            overMsg += "<br><br><span style='color:#ff5555; font-weight:bold; font-size: 20px;'>【时代回响】历史的车轮滚滚向前，你此刻所达成的结局，终究只是漫长岁月中的一时平稳与波澜。这艘古老巨轮的真正出路，并不在于朝堂之上的修修补补，而在于那即将孕育而出的红色星火——中国共产党正于这苦难深重的神州大地上蓄势待发，即将带领人民劈开黑暗，走向真正的民族独立与伟大复兴！</span>";
+
             document.getElementById('event-text').innerHTML = overMsg;
             document.getElementById('options-area').innerHTML = `<button class="btn-option" style="text-align:center; color:#cfa86e; border-color:#cfa86e;" onclick="location.reload()">青史留名，重新来过</button>`;
+            
+            playBGM('ending');
         }
 
         function checkGameOver() {
             let overMsg = "";
-            if (gameState.resources.wealth < 20) overMsg = "【F级结局：财政崩溃】<br><br>国库再也找不出一两白银。各省督抚纷纷宣告不再听命于中央，切断了税收。没有了钱，这艘巨轮在内部的割据与解体中轰然沉没。";
-            else if (gameState.resources.military < 20) overMsg = "【F级结局：国破家亡】<br><br>洋人的坚船利炮轰开了最后的城门。你被迫逃离皇都，最终沦为异国的阶下囚。帝国崩塌，万物凋零。";
-            else if (gameState.resources.people < 20) overMsg = "【F级结局：煤山遗恨】<br><br>震天的喊杀声终于逼近了紫禁城。忍无可忍的百姓冲破了最后的防线。与其受辱于乱军，你选择了最决绝的方式。";
-            else if (gameState.resources.power < 20) overMsg = "【F级结局：瀛台软禁】<br><br>权力的反噬来得如此迅速。那些曾对你卑躬屈膝的臣子如今换了一副面孔。你被剥夺了所有的决断权，幽禁在高墙之内。大清，不再是你的大清了。";
+            if (gameState.resources.wealth <= 0) overMsg = "【F级结局：财政崩溃】<br><br>国库再也找不出一两白银。各省督抚纷纷宣告不再听命于中央，切断了税收。没有了钱，这艘巨轮在内部的割据与解体中轰然沉没。";
+            else if (gameState.resources.military <= 0) overMsg = "【F级结局：国破家亡】<br><br>洋人的坚船利炮轰开了最后的城门。你被迫逃离皇都，最终沦为异国的阶下囚。帝国崩塌，万物凋零。";
+            else if (gameState.resources.people <= 0) overMsg = "【F级结局：煤山遗恨】<br><br>水能载舟，亦能覆舟。民怨沸腾到了极点，天下州县揭竿而起。震天的喊杀声终于逼近了紫禁城，满朝文武逃之夭夭，禁军侍卫四散溃退。你独自登上景山（煤山），俯瞰着这座生活了半生的煌煌殿宇，惊觉大清已彻底失去了它的子民。你重蹈了明朝崇祯帝的覆辙，在无尽的悔恨与孤独中，大清的国祚画上了沉重的句号。";
+            else if (gameState.resources.power <= 0) overMsg = "【F级结局：瀛台软禁】<br><br>权力的反噬来得如此迅速。那些曾对你卑躬屈膝的臣子如今换了一副面孔。你被剥夺了所有的决断权，幽禁在高墙之内。大清，不再是你的大清了。";
             
             if (overMsg) {
+                overMsg += "<br><br><span style='color:#ff5555; font-weight:bold; font-size: 20px;'>【时代回响】历史的车轮滚滚向前，你此刻所遭遇的倾覆与失败，终究只是漫长岁月中的一时波折。这艘古老巨轮的真正出路，并不在于旧时代的苦苦挣扎，而在于那即将孕育而出的红色星火——中国共产党正于这苦难深重的神州大地上蓄势待发，即将带领人民劈开黑暗，走向真正的民族独立与伟大复兴！</span>";
+
                 document.getElementById('event-text').innerHTML = overMsg;
                 document.getElementById('options-area').innerHTML = `<button class="btn-option" style="text-align:center; color:#ff5555; border-color:#ff5555;" onclick="location.reload()">命运已定，重新来过</button>`;
-                // 触发结局全屏泛红特效
                 triggerInkSplash(true); 
                 triggerScreenShake();
+                playBGM('ending');
                 return true;
             }
             return false;
@@ -706,16 +860,12 @@
             gameState.gameData.actionPoints = gameState.gameData.maxAp;
             updateUI();
 
-            // 1. 检查死亡结局
             if (checkGameOver()) return;
 
-            // 2. 检查是否有历史剧本事件
             let hasEvent = loadEvent(gameState.gameData.year);
             
-            // 3. 如果没有历史事件，70%概率触发随机突发事件，30%进入南书房日常
-            //    保证每年都有决策，同时南书房也能有一定出场率用于制衡大臣
             if (!hasEvent) {
-                if (Math.random() < 0.7) {
+                if (Math.random() < 0.7) { 
                     loadRandomEvent();
                 } else {
                     showSouthStudy();
@@ -723,13 +873,11 @@
             }
         }
 
-        // 震屏特效变量
         let shakeTime = 0;
         function triggerScreenShake() {
-            shakeTime = 20; // 震动20帧
+            shakeTime = 20; 
         }
 
-        // Canvas 视觉特效：墨汁飞溅 / 警告划痕
         function triggerInkSplash(isGameOver = false) {
             const canvas = document.getElementById('fx-canvas');
             const ctx = canvas.getContext('2d');
@@ -744,7 +892,6 @@
                 return;
             }
 
-            // 画一道红色的篡改划痕 (模拟朱批被强行划掉)
             ctx.strokeStyle = 'rgba(163, 32, 32, 0.8)';
             ctx.lineWidth = 40;
             ctx.lineCap = 'round';
@@ -753,7 +900,6 @@
             ctx.lineTo(canvas.width * 0.9, canvas.height * 0.8);
             ctx.stroke();
 
-            // 渐隐动画
             let alpha = 1.0;
             function fade() {
                 alpha -= 0.03;
@@ -777,22 +923,18 @@
             fade();
         }
 
-        // 测试专用：强行将数值降至危险区以测试 CSS 动画
         function testDanger() {
-            gameState.resources.wealth = 25;
-            gameState.resources.power = 15;
+            gameState.resources.wealth -= 35;
+            gameState.resources.power -= 35;
             updateUI();
         }
 
-        // 初始化执行
         window.onload = () => {
             updateUI();
             
-            // 初始化底层环境画布与人物剪影
             const canvas = document.getElementById('bg-canvas');
             const ctx = canvas.getContext('2d');
             
-            // 加载玩家提供的背景人物图
             const bgImage = new Image();
             bgImage.src = 'image_d2c2fe.jpg';
             let imgLoaded = false;
@@ -805,12 +947,10 @@
             window.addEventListener('resize', resizeCanvas);
             resizeCanvas();
 
-            // 背景与剪影动画循环
             function renderBackground() {
                 ctx.save();
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                // 震屏处理
                 if (shakeTime > 0) {
                     const dx = (Math.random() - 0.5) * 20;
                     const dy = (Math.random() - 0.5) * 20;
@@ -821,18 +961,15 @@
                 let powerLevel = gameState.resources.power;
                 let breathe = Math.sin(Date.now() / 1500) * 8;
                 
-                ctx.save(); // 保存状态以便处理偏移
+                ctx.save();
                 
                 if (powerLevel < 30) {
-                    // 权力危机时，画面略微前倾压迫
                     ctx.translate(-15, 20); 
                 }
                 
-                // 添加呼吸上下浮动
                 ctx.translate(0, breathe);
                 
                 if (imgLoaded) {
-                    // 计算铺满画板的比例，放大1.05倍避免呼吸时露出边缘底色
                     const scale = Math.max(canvas.width / bgImage.width, canvas.height / bgImage.height) * 1.05;
                     const w = bgImage.width * scale;
                     const h = bgImage.height * scale;
@@ -840,16 +977,13 @@
                     const y = canvas.height / 2 - h / 2;
 
                     if (powerLevel < 30) {
-                        // 危机时，给图片加一层血色滤镜
                         ctx.filter = 'sepia(0.8) hue-rotate(-50deg) saturate(3) brightness(0.7)';
                     } else {
-                        // 【修复】移除过暗的 filter，保留原图的明亮色彩与对比度
                         ctx.filter = 'contrast(1.05)';
                     }
                     ctx.drawImage(bgImage, x, y, w, h);
-                    ctx.filter = 'none'; // 恢复滤镜
+                    ctx.filter = 'none';
                 } else {
-                    // 【修复】兜底方案：如果图片加载失败或正在加载，显示原版剪影，避免全黑
                     if (powerLevel < 30) {
                         ctx.fillStyle = 'rgba(80, 30, 30, 0.95)';
                     } else {
@@ -868,12 +1002,10 @@
                     ctx.fill();
                 }
                 
-                ctx.restore(); // 恢复坐标系，让上面的暗角不受呼吸和前倾影响
+                ctx.restore();
 
-                // 画暗角与微弱烛光摇曳 (盖在图片上方的氛围层)
                 let pulse = Math.sin(Date.now() / 500) * 0.05;
                 
-                // 【修复】扩大中心透明区域，避免遮挡图片主体
                 const grad = ctx.createRadialGradient(
                     canvas.width/2, canvas.height/2, canvas.height * 0.3, 
                     canvas.width/2, canvas.height/2, canvas.height * 0.9
@@ -883,7 +1015,6 @@
                     grad.addColorStop(0, `rgba(80,0,0,${0.05 + pulse})`);
                     grad.addColorStop(1, 'rgba(50,0,0,0.8)');
                 } else {
-                    // 中心几乎透明，边缘保留一点暗角
                     grad.addColorStop(0, `rgba(0,0,0,${0.02 + pulse})`); 
                     grad.addColorStop(1, 'rgba(0,0,0,0.6)'); 
                 }
