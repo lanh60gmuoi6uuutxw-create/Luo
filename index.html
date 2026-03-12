@@ -58,6 +58,8 @@
             font-family: '楷体', 'KaiTi', serif;
             cursor: pointer;
             transition: all 0.4s ease;
+            margin: 10px;
+            width: 250px;
         }
 
         .start-btn:hover {
@@ -65,6 +67,74 @@
             color: #fff;
             box-shadow: 0 0 20px rgba(207, 168, 110, 0.5);
             transform: scale(1.05);
+        }
+
+        /* --- 新增：说明弹窗样式 --- */
+        #instructions-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: #1c1815;
+            border: 2px solid #8a6c42;
+            padding: 40px;
+            width: 80%;
+            max-width: 700px;
+            max-height: 80vh;
+            overflow-y: auto;
+            color: #d8cba9;
+            font-family: '楷体', 'KaiTi', serif;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+
+        .modal-content::-webkit-scrollbar { width: 8px; }
+        .modal-content::-webkit-scrollbar-thumb { background-color: #4a3b2c; border-radius: 4px; }
+
+        .modal-content h2 {
+            color: #cfa86e;
+            text-align: center;
+            margin-top: 0;
+            border-bottom: 1px dashed #5a4b3c;
+            padding-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .modal-content h3 {
+            color: #a87c51;
+            margin-top: 25px;
+            margin-bottom: 10px;
+        }
+
+        .modal-content p, .modal-content li {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .modal-close-btn {
+            display: block;
+            margin: 30px auto 0;
+            background: #2c241c;
+            color: #cfa86e;
+            border: 1px solid #8a6c42;
+            padding: 10px 50px;
+            font-size: 20px;
+            cursor: pointer;
+            font-family: '楷体', 'KaiTi', serif;
+            transition: 0.3s;
+        }
+
+        .modal-close-btn:hover {
+            background: #4a3b2c;
+            color: #fff;
         }
 
         /* 游戏主容器 */
@@ -279,6 +349,34 @@
         <h1>大清掌舵人 1861</h1>
         <p>挽狂澜于既倒，扶大厦之将倾</p>
         <button class="start-btn" onclick="enterGame()">开始游戏</button>
+        <!-- 新增：游戏说明按钮 -->
+        <button class="start-btn" onclick="showInstructions()">游戏说明</button>
+    </div>
+
+    <!-- 新增：游戏说明弹窗 -->
+    <div id="instructions-modal">
+        <div class="modal-content">
+            <h2>【御览：游戏说明】</h2>
+            
+            <h3>📜 游戏背景</h3>
+            <p>1861年，咸丰帝崩于热河，大清帝国风雨飘摇。太平天国烽火未熄，英法联军坚船利炮，朝堂之上暗流涌动。而你，作为幕后真正的掌舵人，需要在此后的近半个世纪中，平衡多方势力，维系残破的国家机器运转，直到1908年的终局大考。</p>
+            
+            <h3>⚙️ 核心规则</h3>
+            <ul>
+                <li><strong>四大属性</strong>：你的每一个朱批都会影响【财】、【武】、【民】、【权】四项核心指标。<strong>任何一项属性归零，游戏将立即触发败局！</strong></li>
+                <li><strong>危局警告</strong>：某项属性跌破30时会发出红光警告。财力告急时，可强行解锁<span style="color:#ff5555">“横征暴敛”</span>选项，以极大的民心与皇权代价挽救国家破产。</li>
+                <li><strong>权臣掣肘</strong>：在南书房理政时可制衡大臣。注意！若对权臣过度“委以重任”，导致其<strong>权倾朝野且心生不臣</strong>，将会触发恶性的“矫诏篡改”事件，暴扣皇权。</li>
+            </ul>
+
+            <h3>🎵 关于游戏音效（必读）</h3>
+            <p style="color: #ffaa55;">如果你听不到背景音乐，请按以下步骤排查：</p>
+            <ol>
+                <li><strong>浏览器自动播放拦截：</strong>现代浏览器（如Chrome/Edge）默认禁止网页自动播放声音。进入游戏后，请<strong>点击左上角的“🔊 音乐开/关”按钮</strong>，即可强制唤醒音乐。</li>
+                <li>如果仍无声音，请点击浏览器地址栏右上角的“•••” -> 设置 -> 搜索“声音（音频）”，将自动播放网站音频设置为<strong>“允许”</strong>，然后刷新页面。</li>
+            </ol>
+
+            <button class="modal-close-btn" onclick="hideInstructions()">朕知道了</button>
+        </div>
     </div>
 
     <div id="game-container">
@@ -287,7 +385,6 @@
             <canvas id="fx-canvas"></canvas>
             <button class="debug-btn" onclick="testDanger()">[测试] 强降数值触发律动</button>
             
-            <!-- 新增：音乐控制按钮 -->
             <button id="audio-toggle" onclick="toggleAudio()" style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.5); color: #8a735c; border: 1px solid #5a4b3c; padding: 5px 10px; cursor: pointer; z-index: 100; font-family: '楷体', 'KaiTi', serif;">🔊 音乐开</button>
         </div>
 
@@ -328,6 +425,15 @@
     </div>
 
     <script>
+        // ================= 说明弹窗控制 =================
+        function showInstructions() {
+            document.getElementById('instructions-modal').style.display = 'flex';
+        }
+
+        function hideInstructions() {
+            document.getElementById('instructions-modal').style.display = 'none';
+        }
+
         // ================= BGM 音频管理器 =================
         const audioTracks = {
             main: new Audio('bgm_main.mp3'),     // 正常理政BGM
@@ -340,7 +446,7 @@
         }
 
         let currentTrack = null;
-        let isAudioMuted = false; // 默认开启音乐，如需默认关闭可改为true
+        let isAudioMuted = false; 
 
         function playBGM(trackName) {
             if (isAudioMuted) return;
@@ -420,7 +526,8 @@
                 desc: "曾国藩攻克天京，长达十余年的太平天国运动终于被镇压。然湘军、淮军做大，地方督抚隐隐有尾大不掉之势。",
                 options: [
                     { text: "下旨裁军，将兵权收归中央", w: 10, m: -15, p: 5, po: 15, msg: "【旁白】圣旨下达，江南大营强行收缴湘淮军械。曾国藩虽未反，但地方将领心生怨怼。史官记下：虽去大患，却自毁长城，清军再无往日锐气。" },
-                    { text: "论功行赏，默许地方督抚拥兵", w: -15, m: 15, p: 5, po: -15, msg: "【旁白】你选择加官进爵，封曾国藩等人为侯伯。湘淮军欢呼雀跃，武力大盛。然自此之后，朝廷政令难出京畿，督抚专权之祸，已然埋下伏笔。" }
+                    { text: "论功行赏，默许地方督抚拥兵", w: -15, m: 15, p: 5, po: -15, msg: "【旁白】你选择加官进爵，封曾国藩等人为侯伯。湘淮军欢呼雀跃，武力大盛。然自此之后，朝廷政令难出京畿，督抚专权之祸，已然埋下伏笔。" },
+                    { condition: () => gameState.resources.power > 80, text: "[皇权极盛] 恩威并施，不动声色分化湘淮将领 (无奖励，仅微小战损)", w: 0, m: -5, p: 0, po: -5, msg: "【旁白】你凭借无可匹敌的皇权，将湘淮将领明升暗降，调离根本。虽然不可避免地引起了少许动荡和战力流失，但你成功把兵权危机的损害降到了最低。" }
                 ]
             },
             1875: {
@@ -428,7 +535,8 @@
                 desc: "同治帝驾崩，无嗣。朝野震动，为了继续大清的国祚（以及你手中的权力），你需要选定一位继承人。",
                 options: [
                     { text: "违背祖制，立年幼的光绪帝", w: -5, m: -5, p: -5, po: 20, msg: "【旁白】醇亲王之子载湉被抱入宫中，是为光绪帝。你在垂帘后冷眼看着群臣跪拜，清流言官的痛骂声被隔绝在太和殿外。权力的权杖，依旧牢牢握在你的手中。" },
-                    { text: "遵循祖制，立成年宗室", w: 5, m: 5, p: 10, po: -40, msg: "【旁白】你终究未能违逆祖宗家法，立了成年的溥伦。新帝登基，朝野盛赞你‘高风亮节’。但随着新帝亲政，你在南书房的椅子被悄然撤走，只留下一声叹息。" }
+                    { text: "遵循祖制，立成年宗室", w: 5, m: 5, p: 10, po: -40, msg: "【旁白】你终究未能违逆祖宗家法，立了成年的溥伦。新帝登基，朝野盛赞你‘高风亮节’。但随着新帝亲政，你在南书房的椅子被悄然撤走，只留下一声叹息。" },
+                    { condition: () => gameState.resources.power > 75 && gameState.resources.wealth > 60, text: "[内帑充盈且重权在握] 密不发丧，稳固朝局后再议立储 (无奖励，微降皇权)", w: -10, m: 0, p: -5, po: -5, msg: "【旁白】你花去巨额封口费，并用强硬手腕稳住了京城各大营。在最危险的权力交接期，大清平稳过渡。没有引来清流谩骂，但也未能通过立储捞取新的政治资本。" }
                 ]
             },
             1884: {
@@ -436,7 +544,8 @@
                 desc: "法军挑衅，福建水师全军覆没，战火蔓延至台湾与镇南关。左宗棠等主战派请求死战，李鸿章则暗示议和。",
                 options: [
                     { text: "乘胜追击，拒不议和", w: -20, m: 10, p: 15, po: -5, msg: "【旁白】前线将士死战不退，镇南关大捷的捷报传回京城，天下震动！列强终于低头，但当你看着户部呈上来的空空如也的账本时，不知这胜利的代价是否过于沉重。" },
-                    { text: "乘胜即收，签订和约", w: -5, m: -10, p: -15, po: 5, msg: "【旁白】《中法新约》签订的消息传出，举国哗然。‘不败而败’的屈辱让天下士子痛哭流涕，清流的折子如雪片般飞向你的御案，你只能独自咽下这苦果。" }
+                    { text: "乘胜即收，签订和约", w: -5, m: -10, p: -15, po: 5, msg: "【旁白】《中法新约》签订的消息传出，举国哗然。‘不败而败’的屈辱让天下士子痛哭流涕，清流的折子如雪片般飞向你的御案，你只能独自咽下这苦果。" },
+                    { condition: () => gameState.resources.military > 65, text: "[武力强盛] 倾注新军主力据险死守，逼迫体面停战 (无奖励，中等消耗)", w: -10, m: -10, p: -5, po: 0, msg: "【旁白】大清精锐部队在南方与法军陷入血肉磨坊，双方互有死伤。法国国内内阁倒台，被迫接受了无赔款停战。战事惨烈，你守住了底线，但也付出了沉重的军费代价。" }
                 ]
             },
             1894: {
@@ -444,7 +553,8 @@
                 desc: "日本在朝鲜挑起战端，北洋水师在黄海迎战。此战关乎东亚霸权与帝国国运。",
                 options: [
                     { text: "倾尽国库，死战到底", w: -30, m: -20, p: 10, po: -10, msg: "【旁白】黄海之上，硝烟弥漫，北洋水师的龙旗伴随着致远舰的沉没而缓缓降下。你倾尽了国库，依然未能挽回败局。东亚的霸权在此刻彻底易主，大清的虚弱暴露无遗。", shake: true },
-                    { text: "避战保船，乞求列强调停", w: -15, m: -15, p: -25, po: -15, msg: "【旁白】你幻想着洋人能主持公道，却等来了《马关条约》的丧钟。割地、赔款，帝国最后的尊严被踩在脚下。民间群情激愤，对朝廷的最后一丝幻想也随之破灭。", shake: true }
+                    { text: "避战保船，乞求列强调停", w: -15, m: -15, p: -25, po: -15, msg: "【旁白】你幻想着洋人能主持公道，却等来了《马关条约》的丧钟。割地、赔款，帝国最后的尊严被踩在脚下。民间群情激愤，对朝廷的最后一丝幻想也随之破灭。", shake: true },
+                    { condition: () => gameState.resources.wealth > 75 && gameState.resources.military > 65, text: "[国富兵强] 强行开启持久战，拖垮日本经济 (无奖励，沉重消耗)", w: -20, m: -15, p: -10, po: -10, msg: "【旁白】你拒绝了马关条约，利用充盈的国库与新军将战争拖入冬天。日本由于穷兵黩武濒临破产，最终被迫撤军。大清保全了领土，但多年的洋务积蓄毁于一旦，元气大伤。", shake: true }
                 ]
             },
             1898: {
@@ -452,7 +562,17 @@
                 desc: "光绪帝重用康有为等人，试图推行维新变法。然而变法触动了旧官僚的根本利益，朝野动荡不安。",
                 options: [
                     { text: "支持变法，推行新政", w: 10, m: 0, p: 20, po: -30, msg: "【旁白】变法诏书一道道颁布，大清仿佛焕发了新的生机。民间欢欣鼓舞，但你发现，那些旧官僚的眼神越来越冷，而你调动军队的虎符，也渐渐不再灵验。" },
-                    { text: "发动政变，囚禁光绪", w: -5, m: 5, p: -20, po: 30, msg: "【旁白】瀛台的秋风凄厉，光绪帝的哀求声被锁在深宫。菜市口，戊戌六君子的鲜血染红了法场。你守住了绝对的权力，也亲手掐灭了帝国温和改革的希望。" }
+                    { text: "发动政变，囚禁光绪", w: -5, m: 5, p: -20, po: 30, msg: "【旁白】瀛台的秋风凄厉，光绪帝的哀求声被锁在深宫。菜市口，戊戌六君子的鲜血染红了法场。你守住了绝对的权力，也亲手掐灭了帝国温和改革的希望。" },
+                    { condition: () => gameState.resources.power > 80 && gameState.resources.people > 50, text: "[威望极高] 亲自下场主导温和立宪，压制双方极端派 (无奖励，轻微消耗)", w: -5, m: -5, p: -5, po: -10, msg: "【旁白】你用无可置疑的铁腕接管了变法，既惩处了守旧的老臣，也流放了激进的康梁。大清在缓慢的阵痛中摸索前行。你耗费了大量心力，各方对你皆有微词，但总算稳住了这艘破船。" }
+                ]
+            },
+            1900: {
+                title: "庚子国变（八国联军侵华）",
+                desc: "义和团运动席卷北方，打出“扶清灭洋”的旗号，焚毁教堂、破坏铁路。列强以此为借口，组成八国联军逼近京津。大厦将倾，你必须做出决断。",
+                options: [
+                    { text: "利用义和团，向万国开战", w: -25, m: -30, p: 10, po: -20, msg: "【旁白】你下诏向十一国宣战！然而血肉之躯挡不住坚船利炮，联军攻陷北京，你被迫仓皇“西狩”。《辛丑条约》签下，四亿五千万两白银的巨额赔款让帝国彻底跌入深渊。", shake: true },
+                    { text: "镇压义和团，乞求列强宽恕", w: -20, m: -10, p: -30, po: -10, msg: "【旁白】你下令痛剿义和团，并向列强卑躬屈膝。虽然勉强保住了紫禁城免遭更严重的兵燹，但百姓视朝廷为洋人的“朝廷”，民心尽丧，大清的统治合法性荡然无存。", shake: true },
+                    { condition: () => gameState.resources.military > 75, text: "[武力极盛] 陈兵津门，与联军血战后强硬和谈 (无奖励，极重消耗)", w: -15, m: -25, p: -10, po: -10, msg: "【旁白】大清最为精锐的近卫军在津门防线与联军绞杀在一起。列强见大清并非软柿子，死伤惨重后同意坐上谈判桌。你保住了京城免遭洗劫，割肉放血换来了退兵，但这也是帝国最后的余威了。", shake: true }
                 ]
             },
             1908: {
@@ -746,6 +866,13 @@
             
             let optionsHtml = "";
             evt.options.forEach(opt => {
+                // 新增：主线事件的属性条件判定
+                if (opt.condition && !opt.condition()) {
+                    return; 
+                }
+
+                let btnStyle = opt.condition ? "border-color: #cfa86e; color: #cfa86e; font-weight: bold; background-color: rgba(207, 168, 110, 0.1);" : "";
+                
                 let msgEscaped = opt.msg.replace(/'/g, "\\'");
                 let extraAction = "";
                 if (opt.shake) extraAction += "triggerScreenShake(); ";
@@ -753,7 +880,7 @@
                 if (opt.isEnd) {
                     optionsHtml += `<button class="btn-option" onclick="showFinalEnding()">${opt.text}</button>`;
                 } else {
-                    optionsHtml += `<button class="btn-option" onclick="${extraAction}modifyStats(${opt.w}, ${opt.m}, ${opt.p}, ${opt.po}, '${msgEscaped}')">${opt.text}</button>`;
+                    optionsHtml += `<button class="btn-option" style="${btnStyle}" onclick="${extraAction}modifyStats(${opt.w}, ${opt.m}, ${opt.p}, ${opt.po}, '${msgEscaped}')">${opt.text}</button>`;
                 }
             });
             document.getElementById('options-area').innerHTML = optionsHtml;
