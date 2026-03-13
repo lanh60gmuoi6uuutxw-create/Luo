@@ -341,6 +341,97 @@
             z-index: 100;
         }
 
+        /* --- 新增：移动端适配 (Responsive Design) --- */
+        @media (max-width: 768px) {
+            /* 开始界面适配 */
+            #start-screen h1 { font-size: 40px; text-align: center; }
+            #start-screen p { font-size: 16px; text-align: center; padding: 0 20px; margin-bottom: 40px; }
+            .start-btn { font-size: 20px; padding: 12px 20px; width: 85%; max-width: 300px; margin: 10px auto; display: block; text-align: center;}
+            
+            /* 游戏主界面改成上下排布 */
+            #game-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: 30vh 1fr auto; /* 上方视觉区30%，中间交互区自适应，下方数值区自适应 */
+            }
+            
+            /* 视觉区移到顶部 */
+            #left-panel {
+                grid-column: 1 / 2;
+                grid-row: 1 / 2;
+                border-right: none;
+                border-bottom: 2px solid #3a2e24;
+            }
+            
+            /* 交互区移到中间 */
+            #right-panel {
+                grid-column: 1 / 2;
+                grid-row: 2 / 3;
+                padding: 15px; /* 减小内边距，给文字和按钮留空间 */
+            }
+            
+            /* 底部数值区改成 2x2 网格 */
+            #bottom-panel {
+                grid-column: 1 / 2;
+                grid-row: 3 / 4;
+                flex-wrap: wrap;
+                padding: 10px;
+                height: auto;
+                justify-content: space-between;
+            }
+            
+            .stat-container {
+                width: 48%; /* 让4个数值排成两行 */
+                margin-bottom: 10px;
+            }
+            
+            /* 头部信息紧凑化 */
+            #game-header {
+                font-size: 18px;
+                flex-direction: column;
+                align-items: center;
+                gap: 5px;
+                margin-bottom: 10px;
+                padding-bottom: 5px;
+            }
+            
+            /* 文字和选项按钮缩小 */
+            #event-text { font-size: 15px; padding-right: 5px; }
+            .btn-option { font-size: 16px; padding: 12px; }
+            
+            /* 南书房大臣卡片适配：按钮横向平铺 */
+            .minister-card {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .minister-actions {
+                display: flex;
+                width: 100%;
+                justify-content: space-between;
+                gap: 5px;
+            }
+            
+            .minister-actions button {
+                flex: 1;
+                margin: 0;
+                padding: 8px 0;
+            }
+            
+            /* 说明弹窗缩小 */
+            .modal-content {
+                width: 90%;
+                padding: 20px;
+            }
+            
+            .modal-content h2 { font-size: 20px; }
+            .modal-content p, .modal-content li { font-size: 14px; }
+            .modal-close-btn { width: 100%; margin-top: 20px; }
+            
+            /* 左上角右上角按钮防遮挡 */
+            #audio-toggle { top: 5px; left: 5px; font-size: 12px; padding: 5px; }
+            .debug-btn { top: 5px; right: 5px; font-size: 12px; padding: 5px; }
+        }
     </style>
 </head>
 <body>
