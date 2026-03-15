@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>大清掌舵人 1861</title>
+    <!-- 新增：百度统计基础代码 -->
+    <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?6e40ed220a3acdcee7a71b38026af8bc";
+      var s = document.getElementsByTagName("script")[0]; 
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
     <style>
         /* 全局样式与历史沉重感调色 */
         body, html {
@@ -1037,12 +1047,22 @@
         function showFinalEnding() {
             let res = gameState.resources;
             let overMsg = "";
+            let endingName = ""; // 新增：用于记录结局名称给百度统计
+
             if (res.power >= 40 && res.wealth >= 60 && res.military >= 60 && res.people >= 60) {
                 overMsg = "【SS级结局：再造中华】<br><br>晨曦破晓，紫禁城的琉璃瓦熠熠生辉。你毅然将大权还于天下，开启立宪，换来了帝国的浴火重生。北洋舰队的汽笛响彻大洋，列强的公使在总理衙门前排队递交国书。你证明了，即使是最古老的巨轮，也能在时代的风暴中重新起航。";
+                endingName = "SS级-再造中华";
             } else if (res.wealth >= 40 && res.military >= 40 && res.people >= 40 && res.power >= 40) {
                 overMsg = "【A级结局：同光中兴】<br><br>虽有诸多不甘，但这艘千疮百孔的巨轮终究没有沉没。江南的机器轰鸣，北洋的铁甲巡弋，你在权臣与列强的夹缝中，为帝国赢得了喘息之机。后人称你为‘裱糊匠’，但只有你自己知道，维持这残破的体面，耗尽了你一生的心血。";
+                endingName = "A级-同光中兴";
             } else {
                 overMsg = "【B级结局：晚清残照】<br><br>丧钟长鸣。你的一生都在试图挽救，却发现每一次挣扎都让绳索勒得更紧。版图破碎，民力枯竭。你尽力了，但历史的车轮依然无情地碾过了你的所有努力。大清，终究只剩下一抹夕阳残照。";
+                endingName = "B级-晚清残照";
+            }
+
+            // 新增：向百度统计上报通关结局
+            if (window._hmt && endingName) {
+                window._hmt.push(['_trackEvent', 'GameEnding', '达成', endingName]);
             }
 
             overMsg += "<br><br><span style='color:#ff5555; font-weight:bold; font-size: 20px;'>【时代回响】历史的车轮滚滚向前，你此刻所达成的结局，终究只是漫长岁月中的一时平稳与波澜。这艘古老巨轮的真正出路，并不在于朝堂之上的修修补补，而在于那即将孕育而出的红色星火——中国共产党正于这苦难深重的神州大地上蓄势待发，即将带领人民劈开黑暗，走向真正的民族独立与伟大复兴！</span>";
@@ -1055,12 +1075,28 @@
 
         function checkGameOver() {
             let overMsg = "";
-            if (gameState.resources.wealth <= 0) overMsg = "【F级结局：财政崩溃】<br><br>国库再也找不出一两白银。各省督抚纷纷宣告不再听命于中央，切断了税收。没有了钱，这艘巨轮在内部的割据与解体中轰然沉没。";
-            else if (gameState.resources.military <= 0) overMsg = "【F级结局：国破家亡】<br><br>洋人的坚船利炮轰开了最后的城门。你被迫逃离皇都，最终沦为异国的阶下囚。帝国崩塌，万物凋零。";
-            else if (gameState.resources.people <= 0) overMsg = "【F级结局：煤山遗恨】<br><br>水能载舟，亦能覆舟。民怨沸腾到了极点，天下州县揭竿而起。震天的喊杀声终于逼近了紫禁城，满朝文武逃之夭夭，禁军侍卫四散溃退。你独自登上景山（煤山），俯瞰着这座生活了半生的煌煌殿宇，惊觉大清已彻底失去了它的子民。你重蹈了明朝崇祯帝的覆辙，在无尽的悔恨与孤独中，大清的国祚画上了沉重的句号。";
-            else if (gameState.resources.power <= 0) overMsg = "【F级结局：瀛台软禁】<br><br>权力的反噬来得如此迅速。那些曾对你卑躬屈膝的臣子如今换了一副面孔。你被剥夺了所有的决断权，幽禁在高墙之内。大清，不再是你的大清了。";
+            let endingName = ""; // 新增：用于记录结局名称给百度统计
+
+            if (gameState.resources.wealth <= 0) {
+                overMsg = "【F级结局：财政崩溃】<br><br>国库再也找不出一两白银。各省督抚纷纷宣告不再听命于中央，切断了税收。没有了钱，这艘巨轮在内部的割据与解体中轰然沉没。";
+                endingName = "F级-财政崩溃";
+            } else if (gameState.resources.military <= 0) {
+                overMsg = "【F级结局：国破家亡】<br><br>洋人的坚船利炮轰开了最后的城门。你被迫逃离皇都，最终沦为异国的阶下囚。帝国崩塌，万物凋零。";
+                endingName = "F级-国破家亡";
+            } else if (gameState.resources.people <= 0) {
+                overMsg = "【F级结局：煤山遗恨】<br><br>水能载舟，亦能覆舟。民怨沸腾到了极点，天下州县揭竿而起。震天的喊杀声终于逼近了紫禁城，满朝文武逃之夭夭，禁军侍卫四散溃退。你独自登上景山（煤山），俯瞰着这座生活了半生的煌煌殿宇，惊觉大清已彻底失去了它的子民。你重蹈了明朝崇祯帝的覆辙，在无尽的悔恨与孤独中，大清的国祚画上了沉重的句号。";
+                endingName = "F级-煤山遗恨";
+            } else if (gameState.resources.power <= 0) {
+                overMsg = "【F级结局：瀛台软禁】<br><br>权力的反噬来得如此迅速。那些曾对你卑躬屈膝的臣子如今换了一副面孔。你被剥夺了所有的决断权，幽禁在高墙之内。大清，不再是你的大清了。";
+                endingName = "F级-瀛台软禁";
+            }
             
             if (overMsg) {
+                // 新增：向百度统计上报失败结局
+                if (window._hmt && endingName) {
+                    window._hmt.push(['_trackEvent', 'GameEnding', '触发', endingName]);
+                }
+
                 overMsg += "<br><br><span style='color:#ff5555; font-weight:bold; font-size: 20px;'>【时代回响】历史的车轮滚滚向前，你此刻所遭遇的倾覆与失败，终究只是漫长岁月中的一时波折。这艘古老巨轮的真正出路，并不在于旧时代的苦苦挣扎，而在于那即将孕育而出的红色星火——中国共产党正于这苦难深重的神州大地上蓄势待发，即将带领人民劈开黑暗，走向真正的民族独立与伟大复兴！</span>";
 
                 document.getElementById('event-text').innerHTML = overMsg;
