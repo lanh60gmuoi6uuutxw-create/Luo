@@ -1068,7 +1068,7 @@
             overMsg += "<br><br><span style='color:#ff5555; font-weight:bold; font-size: 20px;'>【时代回响】历史的车轮滚滚向前，你此刻所达成的结局，终究只是漫长岁月中的一时平稳与波澜。这艘古老巨轮的真正出路，并不在于朝堂之上的修修补补，而在于那即将孕育而出的红色星火——中国共产党正于这苦难深重的神州大地上蓄势待发，即将带领人民劈开黑暗，走向真正的民族独立与伟大复兴！</span>";
 
             document.getElementById('event-text').innerHTML = overMsg;
-            document.getElementById('options-area').innerHTML = `<button class="btn-option" style="text-align:center; color:#cfa86e; border-color:#cfa86e;" onclick="location.reload()">青史留名，重新来过</button>`;
+            document.getElementById('options-area').innerHTML = `<button id="end-btn" class="btn-option" style="text-align:center; color:#cfa86e; border-color:#cfa86e;" onclick="location.reload()">青史留名，重新来过</button>`;
             
             playBGM('ending');
         }
@@ -1100,7 +1100,7 @@
                 overMsg += "<br><br><span style='color:#ff5555; font-weight:bold; font-size: 20px;'>【时代回响】历史的车轮滚滚向前，你此刻所遭遇的倾覆与失败，终究只是漫长岁月中的一时波折。这艘古老巨轮的真正出路，并不在于旧时代的苦苦挣扎，而在于那即将孕育而出的红色星火——中国共产党正于这苦难深重的神州大地上蓄势待发，即将带领人民劈开黑暗，走向真正的民族独立与伟大复兴！</span>";
 
                 document.getElementById('event-text').innerHTML = overMsg;
-                document.getElementById('options-area').innerHTML = `<button class="btn-option" style="text-align:center; color:#ff5555; border-color:#ff5555;" onclick="location.reload()">命运已定，重新来过</button>`;
+                document.getElementById('options-area').innerHTML = `<button id="end-btn" class="btn-option" style="text-align:center; color:#ff5555; border-color:#ff5555;" onclick="location.reload()">命运已定，重新来过</button>`;
                 triggerInkSplash(true); 
                 triggerScreenShake();
                 playBGM('ending');
